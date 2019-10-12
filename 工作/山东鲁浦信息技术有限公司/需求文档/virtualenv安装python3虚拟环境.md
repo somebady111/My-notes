@@ -1,0 +1,21 @@
+# virtualenv+配置环境
+
+- 依赖模块
+  - pip install virtualenv
+  - pip install pygeocoder
+- 使用方法
+  - 1.新建虚拟环境
+    - 1.virtualenv -p python3 geo_env
+    - 2.cd geo_env
+    - 3.python -c 'import pygeocoder'
+  - 2.放置程序包
+    - 1.cd geo_env
+    - 2.复制程序到该目录下
+  - 3.安装配置模块
+    - 1.pip install <模块名>
+- pymysql
+  - 方法
+    - pip install pymysql
+- mqtt客户端包
+  - 方法
+    - pip install paho-mqtt

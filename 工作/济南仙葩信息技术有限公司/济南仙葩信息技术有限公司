@@ -1,0 +1,259 @@
+# 济南仙葩信息技术有限公司
+
+**1.工作内容**
+
+微信公众号，微信小程序，商城系统，大数据，云计算，web服务器端架构项目文档编写
+
+**2.要求**
+
+web开发，Django/Flask，html/css/javascript,bootstrap,jquery，mysql/postgresql，微信开发/微信公众号和小程序开发，Linux/git，爬虫scrapy/pyspider
+
+**3.时间地址**
+
+2019-8-10，上午九点半   济南市高新区工业南路44号 丁豪广场7号楼1-910   王经理13001737836
+
+**4.一试总结**
+
+python基础方面：
+
+`1.装饰器：要求手写一个装饰器例子`
+
+`2.进程、线程：要求实现一个进程线程的例子，并手写出来`
+
+`3.深拷贝、浅拷贝：区别`
+
+`4.__init__和__new__的区别`
+
+前端方面：
+
+`1.css有哪些选择器`
+
+Django方面：
+
+`1.ORM`
+
+`2.Django的缓存机制`
+
+`3.TMV模型`
+
+`4.介绍一下wsgi`
+
+爬虫方面：
+
+`1.scrapy爬虫框架的架构`
+
+阶段：
+
+`1.自我介绍`
+
+`2.答问环节`
+
+`3.说出自己的优缺点`
+
+`4.提问环节`
+
+**5.问题回顾**
+
+装饰器:
+
+1.装饰器的作用：
+
+`1.带有参数的装饰器（多参数，单参数）`
+
+```python
+import time
+
+def inter_time(sum):
+    def count(a,b):
+        start_time = time.time()
+        print('开始时间:',start_time)
+        sum(a,b)
+        end_time = time.time()
+        print('结束时间:',end_time)
+        iter_time = end_time-start_time
+        print('程序用时:',iter_time)
+        return iter_time
+    return count
+
+@inter_time
+def sum(a,b):
+    print('a+b=',a+b)
+    
+if __name__ == "__main__":
+    sum(1,2)
+
+```
+
+2.进程，线程的使用
+
+```python
+# 多进程
+from multiprocessing import Process
+
+def process(i):
+   print('这是进程:{}'.format(i))
+
+class  myprocess(Process):
+    def __init__(self,target,args):
+        Process.__init__(self)
+        self.target=target
+        self.args = args
+        
+    def run(self):
+        self.target(self.args)
+    
+if __name__ == "__main__":
+    for i in range(10):
+        p1 = myprocess(target=process,args=(i))
+        p1.start()
+        p1.join()
+  
+# 进程池
+import multiprocessing
+
+def do_process(i):
+    print('这是进程{}'.format(i))
+    
+if __name__ == "__main__":
+    pool = multiprocessing.Pool()
+    for i in range(10):
+        pool.apply_async(do_process,i)
+        pool.close()
+        pool.join()
+```
+
+```python
+# 多线程
+from threading import Thread
+
+def do_thread(i):
+    print('这是线程:{}'.format(i))
+
+class mythread(Thread):
+    
+    def __init__(self,target,args):
+        Thread.__init__(self)
+        self.target = target
+        self.args = args
+
+    def run(self):
+        self.target(self.args)
+    
+if __name__ == "__main__":
+    for i in range(10):
+        t1 = mythread(target=do_thread,args=i)
+        t1.start()
+        t1.join()
+
+# 线程池
+import threading
+
+def do_thread(i):
+    print('这是线程{}'.format(i))
+    
+if __name__ == "__main__":
+    pool = threading.Pool()
+    for i in range(10):
+        pool.apply_async(do_thread,(i,))
+        pool.close()
+        pool.join()
+
+```
+
+3.深拷贝和浅拷贝
+
+`1.直接复制，默认是一种浅拷贝，拷贝对象是也会做出相同改变`
+
+```python
+import copy
+copy.copy()
+```
+
+`2.不再拷贝子对象（源列表新添加的对象），源列表发生改变，但拷贝对象的内容不再发生改变`
+
+```python
+import copy
+copy.deepcopy()
+```
+
+4.`__init__和__new__的区别`
+
+`1.__init__是一个实例方法，对实例做一定的初始化工作，不返回`
+
+`2.__new__是一个静态方法，新创建一个实例，并返回`
+
+5.CSS有哪些选择器
+
+`1.标签选择器`
+
+`body div ul p li`
+
+`2.类选择器`
+
+`class=''`
+
+`3.ID选择器`
+
+`id=''`
+
+`4.全局选择器`
+
+`*`
+
+`5.继承选择器`
+
+`div p`
+
+`6.伪类选择器`
+
+`link visited active hover`
+
+`7.后代选择器`
+
+`8.子代选择器`
+
+`9.群组选择器`
+
+6.ORM对象映射关系
+
+`1.定义的对象（类）映射到数据库上的表`
+
+7.MVT和MVC
+
+`1.为了解耦`
+
+`2.module层 view层 templates层 controller层`
+
+8.django的缓存机制
+
+`1.django中配置缓存源，将数据文件缓存进文件里，可以直接调用`
+
+9.django的wsgi（web服务器网关接口python中定义的一个网关类型）
+
+`1.方便了接口的调用，只要是实现了wsgi协议的web服务器都能够跑起来程序`
+
+10.scrapy的架构
+
+`1.engine引擎`
+
+`2.item项目`
+
+`3.scheduler调度器`
+
+`4.Downloader下载器`
+
+`5.spiders定义爬取规则的蜘蛛`
+
+`6.downloader middlewares 下载器中间件`
+
+`7.spider middlewares 蜘蛛中间件，输入新的响应或者请求`
+
+11.自我介绍
+
+`1.内容：介绍自己的学历、专业、为何使用python、之前有做过什么、简单说一些了解的东西`
+
+`2.实际：`
+
+12.提问环节
+
+`1.问工作内容、问工作时长、问薪资大概`
