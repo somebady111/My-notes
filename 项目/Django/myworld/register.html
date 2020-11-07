@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title charset="utf-8">myworld注册页面</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            div#body-head {
+                color: darkred;
+                font-size: 25px;
+                border: 1px solid black;
+                scroll-padding: 5px;
+                text-align: center;
+                height: 50px;
+            }
+            div#body-body {
+                color: red;
+                font-size: 12px;
+                border: 1px solid black;
+                scroll-padding: 5px;
+                text-align: center;
+                height: 860px;
+            }
+            div#body-foot {
+                border: 1px solid black;
+                color: red;
+                font-size:12px;
+                scroll-padding: 5px;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container" id="body-head">
+            欢迎注册myworld
+        </div>
+        <div class="container" id="body-body">
+            <form>
+                <p>
+                    <input type="text" max="10" placeholder="请输入注册账户昵称">
+                </p>
+                <p>
+                    <input type="text" maxlength=15 placeholder="请输入注册账号">
+                </p>
+
+                <p>
+                    <input type="password" maxlength=20 placeholder="请输入注册的账户密码">
+                </p>
+                <p>
+                    <input type="password" maxlength=20 placeholder="请再次输入密码确认">
+                </p>
+                <button type="reset" value="">重置</button>
+                <button type="submit" value="">注册</button>
+            </form>
+        </div>
+        <div class="container" id="body-foot">
+        	@quicksand！
+        </div>
+    </body>
+</html>

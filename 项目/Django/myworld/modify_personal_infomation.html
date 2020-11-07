@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title charset="utf-8">个人信息修改</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            div#body-foot {
+                border: 1px solid black;
+                color: red;
+                font-size:12px;
+                scroll-padding: 5px;
+                text-align: center;
+            }
+            div#body-head {
+                border: 1px solid black;
+                color: darkred;
+                font-size:30px;
+                scroll-padding: 5px;
+                text-align: center;
+            }
+            div#body-content {
+                border: 1px solid black;
+                color: coral;
+                font-size:12px;
+                scroll-padding: 5px;
+                text-align: center;
+                height: 880px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container" id="body-head">
+            个人信息修改
+        </div>
+        <div class="container" id="body-content">
+            <form>
+                <p>
+                    <input type="text" max="10" placeholder="请输入新的昵称：">
+                </p>
+                <p>
+                    <input type="text" maxlength=15 placeholder="请输入新的用户名：">
+                </p>
+
+                <p>
+                    <input type="password" maxlength=20 placeholder="请输入新的账户密码：">
+                </p>
+                <p>
+                    <input type="password" maxlength=20 placeholder="再次确认您的账户密码：">
+                </p>
+                <button type="reset" value="">重置</button>
+                <button type="submit" value="">确认信息并提交</button>
+            </form>
+        </div>
+        <div class="container" id="body-foot">
+        	@quicksand！
+        </div>
+    </body>
+</html>

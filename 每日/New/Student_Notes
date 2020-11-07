@@ -1,0 +1,1365 @@
+# My Notes
+
+`Day:`2020-9-20 Sunday
+
+`Title:`
+
+1. kali更新命令
+2. 收集3.6版本库名迁移3.8
+3. Windows中添加环境变量
+4. Linux系统安装python版本
+
+`Content:`
+
+```python
+# kali更新命令
+nano /etc/apt/sources.list
+apt-get update && apt-get dist-upgrade -y
+
+# 虚拟环境搭建(python3.7环境venv)
+sudo apt-get install python3-venv
+python3.7 -m venv xxx-env
+cd typeidea-env
+source bin/activate
+pip3 install xxx
+deactivate
+
+# Linux常用命令
+https://www.runoob.com/linux/linux-command-manual.html
+    
+# Linux系统中安装python版本
+1.安装基础库
+sudo apt-get install -y python3-dev build-essential libssl-dev libffi-dev libxml2 libxml2-dev libxslt1-dev zlib1g-dev libcurl4-openssl-dev
+2.sudo apt-get install -y python3  (2020-9-20 实测python版本3.8.2)
+3.安装pip3
+sudo apt-get install -y python3-pip
+
+# win系统添加环境变量
+1.sysdm.cpl # 进入环境变量设置
+2.path目录
+3.添加目标目录
+4.比如安装（2020-9-20）Python3.8.2版本，添加环境变量后正常调用为python3.8.2
+```
+
+`Day:`2020-10-1 Thursday
+
+`Title:`
+
+1.专四词汇
+
+2.UDP和TCP编写，及详情总结
+
+`Content:`
+
+```python
+# 1.专四词汇
+heartbreaking adj.悲伤或失望到难以承受忍受的程度；令人悲伤的 v.使...心碎
+disintegrate n.解体，瓦解，崩溃；破碎，分裂，粉碎
+sympathetic adj.有同情心的；同情的；支持的
+mystery n.神秘的事物；神秘感
+interfere v.干涉，妨碍
+
+# 2.UDP
+
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# python version:python3.8
+# author:jingzuo
+# python3 udp
+
+import socket,argparse
+from datetime import datetime
+
+MAX_BYTES = 65535
+
+def server(port):
+    # 创建套接字
+    sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    # 绑定IP，端口
+    sock.bind(('127.0.0.1',port))
+    # 获取打印套接字的名字
+    print('Listening at {}'.format(sock.getsockname()))
+    while True:
+        # 接收客户端发送的内容
+        data,address = sock.recvfrom(MAX_BYTES)
+        # 对内容进行解码
+        text = data.decode('ascii')
+        print('The Client at {} says {!r}'.format(address,text))
+        text = 'your data was {} bytes long'.format(len(data))
+        # 编码发送内容长度，地址
+        data = text.encode('ascii')
+        sock.sendto(data,address)
+
+def client(port):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    text = 'The time is {}'.format(datetime.now())
+    data = text.encode('ascii')
+    sock.sendto(data,('127.0.0.1',port))
+    print('The Os assigned me the address {}'.format(sock.getsockname()))
+    data,address = sock.recvfrom(MAX_BYTES)
+    text = data.decode('ascii')
+    print('The sever {} replied {!r}'.format(address,text))
+
+if __name__ == "__main__":
+    # argparse函数
+    # 创建argparse函数选项(参数)
+    choices = {'client':client,'server':server}
+    # 参数描述
+    parser = argparse.ArgumentParser(description='Send and receive udp locally')
+    parser.add_argument('role',choices=choices,help='which role to play')
+    parser.add_argument('-p',metavar='PORT',type=int,default=1060,help='udp port default 1060')
+    args = parser.parse_args()
+    function = choices[args.role]
+    function(args.p)
+
+# 3.tcp
+
+```
+
+
+
+
+
+`Day:`2020-10-12 PM19:46
+
+`1.收支统计`
+
+取钱：单支出5元，充饭卡300元，13号充值
+
+补衣服：12元
+
+零食：3元
+
+购物：373.15元
+
+`2.10月11日学习内容回顾`
+
+1.原始的名称服务程序
+
+```python
+import socket
+# 获取主机名称
+s = socket.gethostname()
+print('hostname is {}'.format(s))
+
+sockname = socket.getfqdn()
+print('sockname is {}'.format(sockname))
+
+# 对IPV4主机名和IP地址相互转换
+ip = socket.gethostbyname('LAPTOP-DIALKSAK')
+# 此处查明的ip为以太网的IP地址
+print('The host IP is {}'.format(ip))
+
+address = socket.gethostbyaddr(ip)
+print('The host addr is {}'.format(address))
+
+#查询操作系统已知的符号名查询协议号和端口号
+port1 = socket.getprotobyname('UDP')
+port2 = socket.getservbyname('onion')
+name = socket.getservbyport(port1)
+
+# 获取运行python程序的机器主IP地址
+pro_ip = socket.gethostbyname(socket.getfqdn())
+print('the pro_ip is {}'.format(pro_ip))
+```
+
+2.getaddrinfo()使用场景
+
+只在主机名查询	时大量使用，真正创建客户端、服务端需要tcp，udp此类协议的方法。
+
+3.DNS协议
+
+DNS是域名解析系统的简称，是对主机名和IP地址的映射的一种机制。
+
+whois 获取服务器中存储的相关域名的信息。
+
+```python
+whois python.org
+```
+
+
+
+4.使用python进行DNS查询
+
+```python
+pip install dnspython3
+
+import argparse,dns.resolver
+
+def lookup(name):
+    for qtype in 'A','AAAA','CNAME','MX','NS':
+        answer = dns.resolver.query(name,qtype,raise_on_answer=False)
+        if answer.rrset is not None:
+            print(answer.rrset)
+            
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='...')
+    parser.add_argument('name',help='...')
+    lookup(parser.parse_args().name)
+    
+```
+
+类型：
+
+A 代表IPV4
+
+AAAA 代表IPV6
+
+NS 名称服务器
+
+MX 邮件服务器
+
+CNAME 别名
+
+
+
+#### Day:2020-10-14
+
+`十月十三号回顾`
+
+`1.二进制数和字节顺序`
+
+大端法：将高位字节存储在前面
+
+小端法：将低位字节存储在前面
+
+```python
+import struct
+
+# 大端法
+struct.pack('<i',4253)
+# 小端法
+struct.pack('>i',4253)
+
+# 转换二进制数字
+struct.unpack('<i',b'\x8d\x10\x00\x00')
+```
+
+`2.封帧和引用`
+
+封帧要考虑的问题:
+
+1.接收方何时最终停止调用recv（）才最安全？
+
+2.整个消息或数据何时才能完整的传达？
+
+3.何时才能将接收到的消息作为一个整体来处理？
+
+模式一：用于一些简单的网络协议
+
+发送方循环发送数据，直到所有数据都传递给sendall（）为止，然后close（）关闭套接字；接收方只需要不断调用recv（），直到recv（）最后返回一个空字符串为止。	
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# author: jingzuo
+# 封帧的模式一
+
+import socket,argparse
+
+def server(address):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    sock.bind(address)
+    sock.listen(1)
+    print('Run this script in another window with "-c" to connect')
+    print('listening at {}'.format(sock.getsockname()))
+    sc,sockname = sock.accept()
+    print('accepted connection from {}'.format(sockname))
+    sc.shutdown(socket.SHUT_WR)
+    message = b''
+    while True:
+        more = sc.recv(8192)
+        if not more:
+            print('Received zero bytes - end of file')
+            break
+        print('Received {} bytes'.format(len(more)))
+        message += more
+    print('Message:\n')
+    print(message.decode('ascii'))
+    sc.close()
+    sock.close()
+
+def client(address):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.connect(address)
+    sock.shutdown(socket.SHUT_RD)
+    sock.sendall(b'beautiful is better than ugly.\n')
+    sock.sendall(b'explicit is better than implicit.\n')
+    sock.sendall(b'simple is better than complex.\n')
+    sock.close()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='transmit & receive a data stream')
+    parser.add_argument('hostname',nargs='?',default='127.0.0.1')
+    parser.add_argument('-c',action='store_true',help='run as the client')
+    parser.add_argument('-p',type=int,metavar='port',default=1060,help='Tcp port number (default:%(default)s)')
+    args = parser.parse_args()
+    function = client if args.c else server
+    function((args.hostname,args.p))
+
+```
+
+
+
+模式二：在两个方向上都通过流发送消息。
+
+首先，通过流在一个方向上发送信息，然后关闭此方向；然后，在另一个方向上通过流发送数据，最后关闭套接字。
+
+模式三：使用定长消息。
+
+eg：发送16bit长度消息，另一端在接收到16bit长度消息后，确认接收完毕，关闭套接字连接。
+
+模式四：使用特殊字符来划分消息边界。
+
+接收方进入recv（）循环并不断等待，知道累加到返回字符串包含消息结束的定界符为止。
+
+只有在消息使用字母表有限时，才使用定界符机制。
+
+模式五：在每个消息加上其长度作为前缀。
+
+类似于定长消息收发
+
+模式六：发送多个数据块，并在每个数据块前加上数据块长度作为其前缀。
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# author:jingzuo
+# block data stream
+
+import socket,argparse,struct
+
+# 设置4bit长度的定界符
+header_struct = struct.Struct('!I')
+
+def recvall(sock,length):
+    blocks = []
+    while length:
+        block = sock.recv(length)
+        if not block:
+            raise EOFError('socket closed with {} bytes left in this block'.format(length))
+        length -= len(block)
+        blocks.append(block)
+    return b''.join(blocks)
+
+def get_block(sock):
+    data = recvall(sock,header_struct.size)
+    (block_length,) = header_struct.unpack(data)
+    return recvall(sock,block_length)
+
+def put_block(sock,message):
+    block_length = len(message)
+    sock.send(header_struct.pack(block_length))
+    sock.send(message)
+
+def server(address):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    sock.bind(address)
+    sock.listen(1)
+    print('Run this script in anthor window with "-c" to connect')
+    print('listening at {}'.format(sock.getsockname()))
+    sc,sockname = sock.accept()
+    print('accepted connection from {}'.format(sockname))
+    sc.shutdown(socket.SHUT_WR)
+    while True:
+        # 将流打包处理
+        block = get_block(sc)
+        if not block:
+            break
+        print('block says {}'.format(repr(block)))
+    sc.close()
+    sock.close()
+
+def client(address):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.connect(address)
+    sock.shutdown(socket.SHUT_RD)
+    # 为消息添加长度前缀
+    put_block(sock,b'Beautiful is better than ugly')
+    put_block(sock,b'Explicit is better than implict')
+    put_block(sock,b'simple is better than complex')
+    put_block(sock,b'')
+    sock.close()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Transmit & reveive blocks over ICP')
+    parser.add_argument('hostname',nargs='?',default='127.0.0.1',help='ip address or hostname (default:%(default)s)')
+    parser.add_argument('-c',action='store_true',help='run as the client')
+    parser.add_argument('-p',type=int,metavar='port',default=1060,help='tcp port number (default:%(default)s)')
+    args = parser.parse_args()
+    function = client if args.c else server
+    function((args.hostname,args.p))
+    
+```
+
+
+
+#### Day:2020-10-16
+
+`1.pickle与自定义定界符的格式`
+
+```python
+import pickle
+from io import BytesIO
+
+# pickle原生序列化
+list = pickle.dumps([5,6,7])
+print('the binary type an {}'.format(list))
+protogenesis = pickle.loads(list)
+print('the proto_data is {}'.format(protogenesis))
+
+# 文件读取pickle数据
+f = BytesIO(list)
+file_list = pickle.load(f)
+print('file read content is {}'.format(file_list))
+len_list = f.tell()
+print('the byte_list length is {} data'.format(len_list))
+behind_data = f.read()
+print('behind data is {}'.format(behind_data)) # 读取分解符.后的数据内容
+
+```
+
+`2.压缩（zlib）`
+
+```python
+import zlib
+
+data = zlib.compress(b'python') + b'.' + zlib.compress(b'zlib') + b'.'
+print(data)
+length_data = len(data)
+print(length_data)
+
+d = zlib.decompressobj()
+d.decompress(data[0:len(data)])
+# unused_data 解压缩对象d的unused_data槽
+d.unused_data
+```
+
+`3.异常`
+
+```python
+OSError socket模块的主要错误
+socket.gaierror 在getaddrinfo（）无法找到提供的名称或服务器时
+socket.timeout 超时错误
+scoket.error 打印具体错误
+
+
+# 错误收集
+# 捕捉异常报告blanket
+import sys
+
+try:
+    pass
+except (socket.error,scoket.gaierror) as e:
+    print('find error {} in this file'.format(e),file=sys.stderr)
+    exit(1)
+```
+
+#### Day:2020-10-20 
+
+`1.什么是TLS？以及TLS无法保护哪些信息？`
+
+1.什么是TLS？
+
+TLS,传输安全层协议（Transport Layer Security）
+
+2.TLS无法保护那些信息？
+
+a.本机和远程主机的地址
+
+b.客户端与服务器的端口号
+
+c.客户端获取服务器的IP地址会进行不可保护的DNS查询
+
+
+
+`2.建立一个简单的通过TLS套接字进行通信的客户端和服务端`
+
+```python
+# 为套接字连接提供一个安全通信的步骤
+# step1:创建一个TLS上下文
+context = ssl.create_default_context()
+# step2:调用上下文对象的wrap_socket()方法，建立加密通信
+ssl_sock = context.wrap_socket()
+# step3:通过返回对象ssl_sock进行后续通信内容
+
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# author: jingzuo
+# content:a simple client and server through tls socket to security communication
+
+import socket,ssl,argparse
+
+def client(host,port,cafile=None):
+    # 确认ssl连接的目标
+    purpose = ssl.Purpose.SERVER_AUTH
+    context = ssl.create_default_context(purpose,cafile=cafile)
+
+    raw_sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    raw_sock.connect((host,port))
+    print('the connection address is {!r} port is {}'.format(host,port))
+    # 调用对象context的wrap_socket()方法，让OPenSSL库负责控制TCP连接，与通信双方进行必要的握手协议，并建立加密连接
+    ssl_sock = context.wrap_socket(raw_sock,server_hostname=host)
+    while True:
+        data = ssl_sock.recv(1024)
+        if not data:
+            break
+        print(repr(data))
+
+def server(host,port,certfile,cafile=None):
+    purpose = ssl.Purpose.CLIENT_AUTH
+    # 创建一个TLS上下文对象context，保存对证书和加密算法的偏好设置
+    context = ssl.create_default_context(purpose,cafile=cafile)
+    context.load_cert_chain(certfile)
+
+    listener = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    listener.getsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    listener.bind((host,port))
+    listener.listen(1)
+    print('listening at interface {!r} and port {}'.format(host,port))
+    raw_sock,address = listener.accept()
+    print('connection from host {!r} and port {}'.format(*address))
+    # 调用对象context的wrap_socket()方法，让OPenSSL库负责控制TCP连接，与通信双方进行必要的握手协议，并建立加密连接
+    ssl_sock = context.wrap_socket(raw_sock,server_side=True)
+    # 使用wrap_socket()调用返回的ssl_sock对象，进行后续通信
+    ssl_sock.sendall('simple is better than complex'.encode('ascii'))
+    ssl_sock.close()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='this is client and server to safe tls communication')
+    parser.add_argument('host',help='hostname or IP address')
+    parser.add_argument('port',type=int,help='Tcp port number')
+    parser.add_argument('-a',metavar='cafile',default=None,help='path to ca certificate pem file')
+    parser.add_argument('-s',metavar='certfile',default=None,help='run as server')
+    args = parser.parse_args()
+    if args.s:
+        server(args.host,args.port,args.s,args.a)
+    else:
+        client(args.host,args.port,args.a)
+
+```
+
+```reStructuredText
+# 参数说明
+1.cafile选项：表示脚本验证远程地址是信任的证书机构
+证书在验证时，会选用知名的公共证书或是本地保存的整数，同时使用两种证书的设置需要设置以下：
+a.设置上下文
+>>>context = ssl.creat_default_context()
+b.设置cafile为None
+c.调用方法安装其他证书
+>>>context.load_verify_locations(cafile)
+
+2.wrap_socket()选项
+wrap_socket()选项一个使用在客户端，一个使用在服务端。
+服务端使用参数：
+>>>server_side = True
+客户端使用参数（在已提供到connect的主机地址后）:
+>>>server_hostname=host
+```
+
+------
+
+
+
+#### Day:2020-10-26 周一
+
+`1.TLS（安全完美前向安全）`
+
+对数据保密要求较高，需要制定OpenSSL使用确切的加密算法。
+
+```python
+# 设置特定的协议版本或加密算法
+# ciphers 返回OpenSSL与通信对方连接中使用的加密算法
+context = ssl.SSL.Context(ssl.PROTOCOL_TLSv1_2)
+context.verify_mode = ssl.CERT_MODE
+context.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
+...
+context.set_ciphers('ECDH+AES128') # ECDHE椭圆曲线加密算法
+```
+
+`2.支持TLS的协议`
+
+如何配置加密算法和选项。
+
+a.http.client  构造一个HTTPConnection对象
+
+b.smtplib  构造一个SMTP_SSL对象
+
+c.poplib  构造一个POP3_SSL对象
+
+d.imaplib  构造一个IPV4_SSl对象
+
+e.ftplib  构造一个FTP_TLS对象
+
+f.nntplib  构造一个NNTP网络新闻对象
+
+------
+
+
+
+#### Day:2020-10-27 周二
+
+`1，章节7：服务器架构`
+
+网络服务面临的挑战：
+
+1.正确处理请求并构造合适的响应代码
+
+2.如何将网络代码部署到随系统自动启动的windows服务器或是Unix守护进程中，将活动日志持久化存储，并在无法连接到数据库或后端数据存储区时发出警告，为其提供完整的保护，防止所有失败的情形，或是确保在失败时快速重启。
+
+解决方案：
+
+1.使用多个线程或进程和
+
+2.使用异步网络操作来支持多路复用，不直接使用操作系统提供的多路复用。
+
+------
+
+`2.部署`
+
+要使用单台机器上的服务，客户端只要直接连接到该机器的IP地址即可；而要使用运行在多台机器上的服务，就需要更复杂的方法。
+
+1.一种法案是将该服务的某个实例的地址或主机名返回给客户端，但是服务的时立即塔基，通过主机名或IP地址硬编码连接该服务的客户端都无法继续连接。
+
+2.健壮的方法：令DNS服务器返回运行该服务的所有IP地址，客户端在连接第一个地址不成功的情况下，会去尝试第二第三个地址的连接。广泛使用的方法是在服务前端配置一个负载均衡器，客户端会连接到负载均衡器，由负载均衡器将连接请求转发至实际的服务器。
+
+大型的互联网机房都配置了一个负载均衡器和服务器群，公共的DNS名会返回用户距离最近的机房中的负载均衡器的IP地址。
+
+supervisord
+
+该工具可以运行程序的一个或多个副本，将标准输出流和标准错误流输出到日志文件，并且在进程发生故障时重启进城难。在服务故障过于频繁是发送警告通知。
+
+------
+
+`3.协议实例`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# author : jingzuo
+# content:一个基于tcp协议构建的多服务端一个客户端模型
+
+import argparse,socket,time
+
+# message
+aphorisms = {
+    b'Beautiful is better than?' : b'Ugly.',
+    b'Explicit is better than?' : b'Implict.',
+    b'Simple is better than?' : b'Complex.'
+}
+
+def get_answer(aphorism):
+    '''
+    快速查找
+    :return:
+    '''
+    time.sleep(0.0)
+    return aphorisms.get(aphorism,b'Error:Unknow aphorisms')
+
+def parse_command_line(description):
+    '''
+    获取命令行输入内容
+    :return:socker address
+    '''
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('host',help='IP or hostname')
+    parser.add_argument('-p',metavar='port',type=int,default=1060,help='tcp port default 1060')
+    args = parser.parse_args()
+    address = (args.host,args.p)
+    return address
+
+def create_srv_socket(address):
+    '''
+    构造tcp连接套接字函数
+    :return: tcp套接字对象
+    '''
+    listener = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    listener.getsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    listener.bind(address)
+    # 决定为服务端的关键函数listen()
+    listener.listen(64)
+    print('Listening at {}'.format(address))
+    return listener
+
+def accept_conversation_forever(listener):
+    '''
+    不断接收连接的函数
+    :return:
+    '''
+    while True:
+        sock,address = listener.accept()
+        print('accepted connection from {}'.format(address))
+        handle_conversation(sock,address)
+
+def handle_conversation(sock,address):
+    '''
+    处理连接异常函数
+    :return:
+    '''
+    try:
+        while True:
+            handle_request(sock)
+    except EOFError:
+        print('Client socket to {} has closed'.format(address))
+    except Exception as e:
+        print('Client {} error:{}'.format(address,e))
+    finally:
+        sock.close()
+
+def handle_request(sock):
+    '''
+    处理收发消息并进行封帧
+    消息封帧
+    :return:
+    '''
+    aphorism = recv_until(sock,b'?')
+    answer = get_answer(aphorism)
+    sock.sendall(answer)
+
+def recv_until(sock,suffix):
+    '''
+    处理消息接收
+    :return:
+    '''
+    message = sock.recv(4096)
+    if not message:
+        raise EOFError('Socket closed')
+    while not message.endswith(suffix):
+        data = sock.recv(4096)
+        if not data:
+            raise IOError('received {!r} then socket closed'.format(message))
+        message += data
+    return message
+
+```
+
+
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# author : jingzuo
+# content : a Example client
+
+import argparse,random,socket
+import zen_utils
+
+def client(address,cause_error=False):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.connect(address)
+    aphorisms = list(zen_utils.aphorisms)
+    if cause_error:
+        sock.sendall(aphorisms[0][:-1])
+        return
+    for aphorism in random.sample(aphorisms,3):
+        sock.sendall(aphorism)
+        print(aphorism,zen_utils.recv_until(sock,b'.'))
+    sock.close()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Example client')
+    parser.add_argument('host',help='ip or address')
+    # cause_error 正常为False，当发送不完整的消息时，服务器挂起
+    parser.add_argument('-e',action='store_true',help='cause an error')
+    parser.add_argument('-p',metavar='port',type=int,default=1060,help='tcp port default 1060')
+    args = parser.parse_args()
+    address = (args.host,args.p)
+    client(address,args.e)
+```
+
+```bash
+>>>python client.py 127.0.0.1
+```
+
+
+
+
+
+####  Day：2020-10-28 周三
+
+`1.单词例句`
+
+```reStructuredText
+presently adv.一会儿，不久，目前，马上
+eg：Don't worry,The doctors will be here presently. 别担心，医生马上就到。
+
+brood n.一窝，同窝幼崽 v.冥思苦想；默想
+eg：The brood of young birds. 一窝小鸟。
+
+diplomacy n.外交；外交手腕
+eg：Diplomacy is an import method of solving probloms.外交是问题的方法。
+
+repetition n.重复，反复
+
+solitary adj.单独的，隐居的
+eg：a solitary man.
+
+doctrine n.教条，学说，信条，原则
+
+scapegoat n.替罪羊
+```
+
+
+
+`2.单线程服务器`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# name:srv_single
+# author：jingzuo
+# content：单线程服务器,one client at a time other must wait
+# environment：Ubuntu linux run.
+
+import zen_utils
+
+if __name__ == "__main__":
+    address = zen_utils.parse_command_line('simple single-threaded server')
+    listener = zen_utils.create_srv_socket(address)
+    zen_utils.accept_conversation_forever(listener)
+```
+
+```bash
+# 使用标准库的trace模块运行单线程服务器，测试每一行代码花费的时间
+python3.7 -m trace -tg --ignore-dir=/usr srv_single.py
+
+结果如下：
+ --- modulename: srv_single, funcname: <module>
+0.00 srv_single.py(6): import zen_utils
+ --- modulename: zen_utils, funcname: <module>
+0.00 zen_utils.py(6): import argparse,socket,time
+0.02 zen_utils.py(10):     b'Beautiful is better than?' : b'Ugly.',
+0.02 zen_utils.py(11):     b'Explicit is better than?' : b'Implict.',
+0.02 zen_utils.py(12):     b'Simple is better than?' : b'Complex.'
+0.02 zen_utils.py(15): def get_answer(aphorisms):
+0.02 zen_utils.py(23): def parse_command_line(description):
+0.02 zen_utils.py(35): def create_srv_socket(address):
+0.02 zen_utils.py(48): def accept_conversation_forever(listener):
+0.02 zen_utils.py(58): def handle_conversation(sock,address):
+0.02 zen_utils.py(73): def handle_request(sock):
+0.02 zen_utils.py(83): def recv_until(sock,suffix):
+0.02 srv_single.py(8): if __name__ == "__main__":
+0.02 srv_single.py(9):     address = zen_utils.parse_command_line('simple single-threaded server')
+ --- modulename: zen_utils, funcname: parse_command_line
+0.02 zen_utils.py(28):     parser = argparse.ArgumentParser(description=description)
+0.02 zen_utils.py(29):     parser.add_argument('host',help='IP or hostname')
+0.02 zen_utils.py(30):     parser.add_argument('-p',metavar='port',type=int,default=1060,help='tcp port default 1060')
+0.02 zen_utils.py(31):     args = parser.parse_args()
+usage: srv_single.py [-h] [-p port] host
+srv_single.py: error: the following arguments are required: host
+
+```
+
+`3.多线程服务器`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# name:srv_threaded
+# author:jingzuo
+# content:using multiple threads to server clients in parallel
+# environment:ubuntu linux 
+
+import zen_utils
+from threading import Thread
+
+def start_threads(listener,workers=4):
+    t= (listener,)
+    for i in range(workers):
+        Thread(target=zen_utils.accept_conversation_forever,args=t).start()
+
+if __name__ == "__main__":
+    address = zen_utils.parse_command_line('multi-thread server')
+    listener = zen_utils.create_srv_socket(address)
+    start_threads(listener)
+```
+
+`4.异步服务器`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# name:srv_async
+# author:jingzuo
+# environment:Ubuntu Linux
+# content:a example of asynchronous I/O driven directly by the poll() system call.
+
+import select
+from .. import zen_utils
+
+def all_events_forever(poll_object):
+    '''
+    一层：poll（）的while循环，返回多个事件
+    二层：for 循环处理每一个事件
+    :return: 迭代器（yield）对象，当前遍历事件
+    '''
+    while True:
+        for fd,event in poll_object.poll():
+            # 将遍历的值隐藏在yield中，避免主服务器循环因为两次循环迭代产生两次不必要的缩进
+            yield fd,event
+
+def server(listener):
+    '''
+
+    :param listener:
+    :return:
+    '''
+    # 创建socket字典
+    sockets = {listener.fileno():listener}
+    addresses = {}
+    bytes_received = {}
+    bytes_to_send = {}
+
+    # 创建poll对象
+    poll_object = select.poll()
+    # 通过register告知poll对象，已经准备好从新返回的客户端接收套接字数据
+    poll_object.register(listener,select.POLLIN)
+    # 接收yield返回的值,添加在消息队列中
+    for fd,event in all_events_forever(poll_object):
+        sock = sockets[fd]
+        if event & (select.POLLHUP | select.POLLERR | select.POLLNVAL):
+            address = addresses.pop(sock)
+            # 接收池
+            rb = bytes_received.pop(sock,b'')
+            # 发送池
+            sb = bytes_to_send.pop(sock,b'')
+            if rb:
+                print('client {} send {} but then closed.'.format(address,rb))
+            elif sb:
+                print('client {} closed before we sent {}'.format(address,sb))
+            else:
+                print('client {} closed socket normally'.format(address))
+
+            poll_object.unregister(fd)
+            del sockets[fd]
+
+        # 当套接字本身就是客户端的套接字，事件类型为POLLIN，能够给使用recv（）方法接收数据。切换POLLIN模式何POLLOUT模式
+        elif sock is listener:
+            sock,address = sock.accept()
+            print('accepted connection from {}'.format(address))
+            # 将所有新客户端套接字的设置为非阻塞模式
+            sock.setblocking(False)
+            sockets[sock.fileno()] = sock
+            addresses[sock] = address
+            poll_object.register(sock,select.POLLIN)
+
+        # 如果套接字是PULLOUT模式，只要客户端套接字的发送缓冲区还能接收一个或多个字节，poll调用就会提醒，send（）会发送余下内容，发送内容超出缓存区将保存至bytes_to_send
+        elif event & select.POLLIN:
+            more_data = sock.recv(4096)
+            if not more_data:
+                sock.close()
+                continue
+            data = bytes_received.pop(sock,b'') + more_data
+            if data.endswith(b'?'):
+                bytes_to_send[sock] = zen_utils.get_answer(data)
+                poll_object.modify(sock,select.POLLOUT)
+            else:
+                bytes_received[sock] = data
+
+        # 如果客户端套接字返回了错误信息或是关闭状态，该客户端套接字及其发送缓冲区与接收缓冲区将被丢弃。
+        elif event & select.POLLOUT:
+            data = bytes_to_send.pop(sock)
+            n = sock.send(data)
+            if n < len(data):
+                bytes_to_send[sock] = data[n:]
+            else:
+                poll_object.modify(sock,select.POLLIN)
+
+if __name__ == "__main__":
+    address = zen_utils.parse_command_line('low-level async server')
+    listener = zen_utils.create_srv_socket(address)
+    server(listener)
+```
+
+
+
+#### Day：2020-10-30 周五
+
+`1.回调风格的asyncio`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# environment:Ubuntu linux
+# author : jingzuo
+# content: Asynchronous I/O inside asyncio callback methods
+
+import asyncio
+import zen_utils
+
+class Zenserver(asyncio.Protocol):
+
+    def connetction_made(self,transport):
+        self.transport = transport
+        self.address = transport.get_extra_info('peername')
+        self.data = b''
+        print('accepted connection from {}'.format(self.address))
+
+    def connection_lost(self, exc):
+        if exc:
+            print('client {} error: {}'.format(self.address,exc))
+        elif self.data:
+            print('client {} sent {} but then closed'.format(self.address,self.data))
+        else:
+            print('client {} closed socket'.format(self.address))
+
+    def data_received(self, data):
+        self.data += data
+        if self.data.endswith(b'?'):
+            answer = zen_utils.get_answer(self.data)
+            # 将恢复传递给框架的transport.write()方法
+            self.transport.write(answer)
+            self.data = b''
+
+if __name__ == "__main__":
+    address = zen_utils.parse_command_line('asyncio server using callbacks')
+    loop = asyncio.get_event_loop()
+    coro = loop.create_server(Zenserver,*address)
+    server = loop.run_until_complete(coro)
+    print('listening at {}'.format(address))
+    try:
+        loop.run_forever()
+    finally:
+        server.close()
+        loop.close()
+
+```
+
+`2.协程风格的asyncio`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'srv_asyncio_2'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'asynchronous I/O inside an asyncio coroutine.'
+
+import asyncio
+import zen_utils
+
+@asyncio.coroutine
+def handle_conversation(reader,writer):
+    address = writer.get_extra_info('peername')
+    print('accepted connection from {}'.format(address))
+    while True:
+        data = b''
+        while not data.endswith(b'?'):
+            more_data = yield from reader.read(4096)
+            if not more_data:
+                if data:
+                    print('client {} sent {!r} but then closed'.format(address,data))
+                else:
+                    print('client {} closed socket normally'.format(address))
+                return
+            data += more_data
+        answer = zen_utils.get_answer(data)
+        writer.write(answer)
+
+if __name__ == "__main__":
+    address = zen_utils.parse_command_line('asyncio server using coroutine')
+    loop = asyncio.get_event_loop()
+    coro = asyncio.start_server(handle_conversation,*address)
+    server = loop.run_until_complete(coro)
+    print('listening at {}'.format(address))
+    try:
+        loop.run_forever()
+    finally:
+        server.close()
+        loop.close()
+```
+
+`3.解决异步配置的问题`
+
+```reStructuredText
+问题：一部服务器是有硬性限制的，当CPU使用率达到100％时，异步服务器将无法为客户端提供服务。
+解决方案：当需要提高性能时，首先使用异步的回调对象或协程来编写服务，并通过某个异步框架来启动服务。然后在配置一些运行服务器的操作系统，检查操作系统的CPU内核数目，有多少CPU内核，就启动多少个事件循环。根据当前的内核使用情况编写事件循环。
+```
+
+`4.小结`
+
+```reStructuredText
+第七章解决了单通信（服务器稚嫩恶搞在同一时刻与同一个客户端进行交互），而解决方案有多线程或者多进程，但是多线程或者多进程的方式会造成CPU在大多时候是空闲（只有当前正在会话的进程会占用CPU）的，CPU使用不够充分，这时候的解决方案是采用异步的方式编写服务器，通过采用select（）或者poll（）的机制手动编写异步服务器。
+部署：将编写的服务安装到服务器上，并且在系统启动时运行服务器的过程。这里引入了Linux古老的inetd守护进程或者是使用supervisord这样的工具。
+```
+
+#### 章节8：缓存和消息队列
+
+`简介`
+
+```reStructuredText
+本章研究了服务负载较重时，常用的两项基本技术：缓存和消息队列。
+```
+
+`8.1 使用Memcached（内存缓存守护进程）`
+
+```reStructuredText
+使用memcached：memacched将安装它的服务器上的空闲RAM与一个很大的近期最少使用（LRU）的缓存结合使用。
+1.在每个用户空闲内存的服务器上都运行一个memcached守护进程。
+2.将所有的memcached守护进程的IP地址与端口号列出，并将该列表发送给所有将要访问memcached的客户端。
+3.客户端程序现在可以访问一个组织级的速度极快的键值缓存，就像是所有服务器之间共享的一个巨大的python字典。该缓存基于LRU（最近最少使用）。如果有些项长时间没有被访问，就会将这些项丢弃，为新访问的项腾出空间，并记录被频繁访问的项。
+```
+
+```python
+# memcached简单的调用
+# memcached default port：11211
+import memcache
+mc = memcache.Client(['127.0.0.1:11211'])
+mc.set('user:19','simple is better than complex')
+mc.get('user:19')
+```
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'squarys'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'using memcached to cache expensive results'
+
+import memcache,random,time,timeit
+
+def compute_square(mc,n):
+    value = mc.get('sq:%d' % n)
+    if value is None:
+        time.sleep(0.01)
+        value = n * n
+        mc.set('sq:%d' % n,value)
+    return value
+
+def main():
+    mc = memcache.Client(['127.0.0.1'])
+    def make_request():
+        compute_square(mc,random.randint(0,5000))
+    print('Ten sucessive runs:')
+    for i in range(1,11):
+        print('%.2fs'%timeit.timeit(make_request,number=2000),end=' ')
+    print()
+
+if __name__ == "__main__":
+    main()
+    pass
+
+```
+
+`解决脏数据的办法？`
+
+```reStructuredText
+脏数据即过时的旧数据。
+解决办法：
+1.memcached允许我们为缓存中的每一项设置一个过期时间，到达这个时间，memcached会负责将这些项丢弃
+2.如果能够建立从信息标识到缓存中包含该表示的键的映射，那么就可以在脏数据出现后主动移除这些缓存项
+3.当缓存中的记录不可用时，我们可以重写并使用新内容代替更该条记录。在应用程序首次启动时预先安装缓存对大型网站是极为重要的技术。
+python装饰器可以在不改变函数调用的名称以及签名的情况下对其进行包装，实则是在python中增加缓存功能的一种方法，使用的就是基于memcached的装饰器缓存库。
+```
+
+`2020-11-2 Monday PM 19：30`
+
+`8.2 散列与分区`
+
+```reStructuredText
+散列值：所有散列函数都有如下一个基本特性，如果两个散列值是不相同的（根据同一函数），那么这两个散列值的原始输入也是不相同的。这个特性是散列函数具有确定性的结果，具有这种性质的散列函数称为单向散列函数。但另一方面，散列函数的输入和输出不是唯一对应关系的，如果两个散列值相同，两个输入值很可能是相同的，但也可能不同，这种情况称为“散列碰撞（collision）”，这通常是两个不同长度的输入值，刻意计算出相同的输出值。输入一些数据计算出散列值，然后部分改变输入值，一个具有强混淆特性的散列函数会产生一个完全不同的散列值。
+当客户端得到包含多个Memcached实例的列表时，会根据每个键的字符串值的散列值对memcached数据库进行分区，由计算出的散列值决定用memcached集群中的那台服务器来存储特定的记录。
+```
+
+`8.3消息队列`
+
+```reStructuredText
+消息队列保证消息的可靠性自动传输：一条消息要么完整的传输，要么完全不传输。可以设置各种的拓扑结构，应用于：
+1.注册邮箱时，邮箱发送的验证邮箱消息，同时会存放于一个消息队列中，当后台服务器装备好建立一个用于发送的smtp连接时，直接从消息队列获取邮箱地址
+2.可以作为自定义远程过程调用
+3.经常需要将一些大容量的事件数据作为小型的线有效信息流集中存储在消息队列列中并进行分析。
+而且，消息队列具有混合安排并匹配所有客户端与服务器或发布者与订阅者进程的能力，但是他们都需要连接到同一个消息队列系统。
+
+消息队列支持的拓扑结构：
+1.管道
+2.发布者-订阅者
+3.请求-响应
+```
+
+`在python中使用消息队列:蒙特卡洛方法计算π值`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'queuecrazy.py'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'samll application than uses serveral different message queues.'
+
+import random,threading,time,zmq
+
+B = 32
+
+def ones_and_zeros(digits):
+    '''
+    express n in at least d binary digits,with no special prefix
+    :return:
+    '''
+    return bin(random.getrandbits(digits)).lstrip('ob').zfill(digits)
+
+def bitsource(zcontext,url):
+    '''
+    produce random points in the unit square.
+    :return:
+    '''
+    # 创建服务端
+    zsock = zcontext.socket(zmq.PUB)
+    zsock.bind(url)
+    while True:
+        zsock.send_string(ones_and_zeros(B * 2))
+        time.sleep(0.01)
+
+def always_yes(zcontext,in_url,out_url):
+    '''
+    coordinates in the lower-left quadrant are inside the unit circle
+    :return:
+    '''
+    isock = zcontext.socket(zmq.SUB)
+    isock.connect(in_url)
+    isock.setsockopt(zmq.SUBSCRIBE,b'00')
+    osock = zcontext.socket(zmq.PUSH)
+    osock.connect(out_url)
+    while True:
+        isock.recv_string()
+        osock.send_string('Y')
+
+def judge(zcontext,in_url,pythagoras_url,out_url):
+    '''
+    determine whether each input coordinate is inside the unit circle
+    :return:
+    '''
+    isock = zcontext.socket(zmq.SUB)
+    isock.connect(in_url)
+    for prefix in b'01',b'10',b'11':
+        isock.setsockopt(zmq.SUBSCRIBE,prefix)
+    psock = zcontext.socket(zmq.REQ)
+    psock.connect(pythagoras_url)
+    osock = zcontext.socket(zmq.PUSH)
+    osock.connect(out_url)
+    unit = 2 ** (B * 2)
+    while True:
+        bits = isock.recv_string()
+        n,m = int(bits[::2],2),int(bits[1::2],2)
+        psock.send_json(n,m)
+        sumsquares = psock.recv_json()
+        osock.send_string('Y' if sumsquares < unit else 'N')
+
+def pythagoras(zcontext,url):
+    '''
+
+    :return:the sum-of-quares of number sequences
+    '''
+    zsock = zcontext.socket(zmq.REP)
+    zsock.bind(url)
+    while True:
+        numbers = zsock.recv_json()
+        zsock.send_string(sum(n * n for n in numbers))
+
+def tally(zcontext,url):
+    '''
+    how many points fall within the unit circle and return pi
+    :return:return pi
+    '''
+    zsock = zcontext.socket(zmq.PULL)
+    zsock.bind(url)
+    p = q = 0
+    while True:
+        decision = zsock.recv_string()
+        q += 1
+        if decision == 'Y':
+            p += 4
+        print(decision,p / q)
+
+def start_thread(function,*args):
+    '''
+    启动线程
+    :return:
+    '''
+    thread = threading.Thread(target=function,args=args)
+    thread.daemon = True
+    thread.start()
+
+def main(zcontext):
+    pubsub = 'tcp://127.0.0.1:6700'
+    reqrep = 'tcp://127.0.0.1:6701'
+    pushpull = 'tcp://127.0.0.1:6702'
+    start_thread(bitsource,zcontext,pubsub)
+    start_thread(always_yes,zcontext,pubsub,pushpull)
+    start_thread(judge,zcontext,pubsub,reqrep,pushpull)
+    start_thread(pythagoras,zcontext,reqrep)
+    start_thread(tally,zcontext,pushpull)
+    time.sleep(30)
+
+if __name__ == "__main__":
+    main(zmq.Context())
+```
+
+`2020-11-3 周二`
+
+```reStructuredText
+zmq模块介绍（url）：
+
+https://www.cnblogs.com/silence-cho/p/12657234.html
+
+```
+
+`2020-11-5 周四`
+
+#### cheap 10：HTTP服务器
+
+```reStructuredText
+10.1:WSGI
+为了解决python的HTTP服务的可移植型，通过加上一层间接地中间层来解决（WSGI）。
+WSGI的调用，需要输入两个参数：
+1.environ：接收一个字典，字典中提供的键值对是就是的CGI环境变量集合的扩展。
+2.start_response()：通过此参数来声明响应头信息。调用后，app函数可以生成字节字符串，也可以返回一个可迭代对象。该对象可以在迭代过程中生成字节字符串。
+
+```
+
+```python
+# ! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'wsgi_env'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'a simple http service build directly against the low-level wsgi spec'
+
+from pprint import pformat
+from wsgiref.simple_server import make_server
+
+def app(environ,start_response):
+    header = {'Content-Type':'text/plain;charset=utf-8'}
+    start_response('200 ok',list(header.items()))
+    yield 'Here is the wsgi environment:\r\n\r\n'.encode('utf-8')
+    yield pformat(environ).encode('utf-8')
+
+if __name__ == '__main__':
+    httpd = make_server('',8000,app)
+    host,port = httpd.socket.getsockname()
+    print('serving on',host,'port',port)
+    httpd.serve_forever()
+    
+```
+
+`2020-11-6 周五`
+
+#### New plan
+
+```reStructuredText
+rep系统 了解
+Oracle数据库熟练
+Linux掌握
+```
+
