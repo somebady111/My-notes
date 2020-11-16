@@ -19,6 +19,11 @@ git push -u origin main
 git remote add origin https://github.com/somebady111/1.git
 git branch -M main
 git push -u origin main
+
+# 二次上传实践
+git add *
+git commit -m ''
+git push -u origin master
 ```
 
 

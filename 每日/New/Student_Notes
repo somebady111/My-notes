@@ -1363,3 +1363,675 @@ Oracle数据库熟练
 Linux掌握
 ```
 
+#### HTTP服务的四种架构
+
+ ```reStructuredText
+1.运行python编写的服务器，使用WSGI接口运行。
+2.配置mod_wsgi运行Apache，在独立的WSGIDaemonProcess中运行python服务器代码
+3.后端运行python编写的服务器，前端运行能返回静态文件，又对python编写的动态资源进行反向代理web服务器。
+4.最前端运行一个纯粹的反向代理（Varnish），在反向代理后端运行Apache或Nginx，在最后端进行python编写的HTTP服务器。
+ ```
+
+#### 2020-11-7 Saturday 10.7节：不使用web框架编写WSGI可调用的对象
+
+A 构建方法：1.查看WSGI的使用说明，了解环境变量字典的属性 2.使用WebOb、Werkzeug工具提供的包装函数。
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'timeapp_raw'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'a simple http service built directly against the low-level wsgi spec.'
+
+import time
+
+def app(environ,start_response):
+    host = environ.get('HTTP_HOST','127.0.0.1')
+    path = environ.get('PATH_INFO','/')
+    if ':' in host:
+        host,port = host.split(':',1)
+    if '?' in path:
+        path,query = path.split('?',1)
+    headers = [('Content-Type','text/plain;charset=utf-8')]
+    if environ['REQUEST_METHOD'] != 'GET':
+        start_response('501 Not Implemented',headers)
+        yield b'501 Not Implemented'
+    elif host != '127.0.0.1' or path != '/':
+        start_response('404 Not Found',headers)
+        yield b'404 Not Found'
+    else:
+        start_response('200 ok',headers)
+        yield time.ctime().encode('ascii')
+    
+```
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'timeapp_webob'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'a wsgi callable built using webob'
+
+import time,webob
+
+def app(environ,start_response):
+    request = webob.Request(environ)
+    if environ['REQUEST_METHOD'] != 'GET':
+        response = webob.Response('501 Not Implemented',status=501)
+    elif request.domain != '127.0.0.1' or request.path != '/':
+        response = webob.Response('404 Not Found',status=404)
+    else:
+        response = webob.Response(time.ctime())
+    return response(environ,start_response)
+
+```
+
+```reStructuredText
+webob使用补充：
+1.webob内部实现了两个模式：A.从可能包含端口号的Host头中单独分离出主机名 B.忽略路径结尾的查询字符串
+2.webob提供了一个Response对象，该对象设置了所有关于内容类型以及编码的信息，因此只需要传入一个字符串作为响应体，由webob自动处理。
+3.webob的response类提供了content_type和charset两个独立属性，允许用户将将Content_Type头信息的两部分看做两个独立的值进行处理。
+```
+
+
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'timeapp_werkz'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'a wsgi callable built using werkzeug'
+
+import time
+from werkzeug.wrappers import Response,Request
+
+@Request.application
+def app(request):
+    host = request.host
+    if ':' in host:
+        host,port = host.split(':',1)
+    if request.method != 'GET':
+        return Response('501 Not Implemented',status = 501)
+    elif host != '127.0.0.1' or request.path != '/':
+        return Response('404 Not Found',status = 404)
+    else:
+        return Response(time.ctime())
+```
+
+#### 2020-11-11 Wednesday 第十二章：电子邮件的构造与解析
+
+#####  12.1电子邮件的消息格式
+
+```reStructuredText
+1.电子邮件以原始ASCII文本的形式表示，使用1-127的字符代码
+2.行位标记由回车加换行两个连续的字符组成
+3.电子邮件包含一个邮件箭头、一个空行和邮件体
+4.邮件头有不区分大小写的属性名、冒号一级属性值组成；邮件头可以有多行，但是除了第一行外都必须使用空格进行缩进。
+5.纯文本中不支持Unicode字符和二进制数据，所以其他标准提供的编码方式支持将更丰富的数据格式添加到原始ASCII文本找那个，并进行传输和存储。
+```
+
+`电子邮件格式：`
+
+```reStructuredText
+To: recipient@example.com
+From: Test Sender <sender@example.com>
+Subject: Test Message, Chapter 12
+Date: Tue, 25 Mar 2014 19:20:08 -0400
+Message-ID: <20140325232008.15748.50494@guinness>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Hello,
+This is a basic message from Chapter 12.
+ - Anonymous
+```
+
+```reStructuredText
+From:之处电子邮件消息的作者，From支持真实地人名，也支持包含在尖括号中的作者的电子邮件地址
+Reply-to：指出位列在From头里的作者地址
+To：列出一个或多个主接受者
+Cc：列出一个或多个应该受到电子邮件‘抄送’的接受者，这些接受者并不是邮件的柱接受人
+Bcc：列出应该受到电子邮件‘秘密抄送’的接受者，其他接受者都不知道Bcc列出的接受者也会收到邮件
+Subject：消息内容的概述，由作者编写
+Date：指定消息发送或接受的时间
+Message-Id:唯一标识电子邮件的字符串
+In-Reply-To：整个邮件对话中Message-Idweiyi标识的邮件之前的邮件。
+Received：是电子邮件每次到达SMTP传输过程中的一跳时添加，电子邮件服务器管理员同科通过仔细阅读Teceived路径来确定消息是否传达正确
+```
+
+`构造电子邮件消息：`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'build_basic_email'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'a simple basic email build'
+
+import email.message,email.policy,email.utils,sys
+
+text = "Hello," \
+       "this is a basic message from chapter 12." \
+       "- JZ"
+
+def main():
+    message = email.message.EmailMessage(email.policy.SMTP)
+    message['To'] = 'jing1053578154@163.com'
+    message['From'] = 'JZ <1053578154@qq.com>'
+    message['Subject'] = 'Test message,chapter 12'
+    message['Date'] = email.utils.formatdate(localtime = True)
+    message['Message-ID'] = email.utils.make_msgid()
+    message.set_content(text)
+    # 将字节写入文本文件
+    sys.stdout.buffer.write(message.as_bytes())
+
+if __name__ == '__main__':
+    main()
+```
+
+```reStructuredText
+D:\python\课件包\网络编程\网络编程代码\program_chapter_7_20201027\venv\Scripts\python.exe D:/python/课件包/网络编程/网络编程代码/program_chapter_7_20201027/program_12/program_12_2/build_basic_email.py
+To: jing1053578154@163.com
+From: JZ <1053578154@qq.com>
+Subject: Test message,chapter 12
+Date: Wed, 11 Nov 2020 16:29:57 +0800
+Message-ID: <160508339793.14680.6692342519831624548@LAPTOP-D1ALKSAK>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Hello,this is a basic message from chapter 12.- JZ
+
+Process finished with exit code 0
+
+```
+
+##### 12.3添加多媒体和HTML
+
+```reStructuredText
+1.使用带有链接的文字叫超文本；带有图片、视频、声音的内容叫多媒体。
+2.MIME标准为非ASCII数据提供的通用且可扩展的方案：我们可以在Content-Type邮件头中指定一个便捷字符串，使用便捷字符串将电子邮件消息分为多个部件，每个子部件都有自己的邮件头，指定自己的内容类型和编码。
+3.构造MIME消息：a.动用set_content()设置主消息体 b.调用add_related()零次或多次。 c.调用add_alternative()零次或多次 d.调用add_attachment()零次或多次
+```
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'build_mine_email'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'mine path'
+
+import argparse, email.message, email.policy, email.utils, mimetypes, sys
+
+plain = """Hello,
+This is a MIME message from Chapter 12.
+- Anonymous"""
+
+html = """<p>Hello,</p>
+<p>This is a <b>test message</b> from Chapter 12.</p>
+<p>- <i>Anonymous</i></p>"""
+
+img = """<p>This is the smallest possible blue GIF:</p>
+<img src="cid:{}" height="80" width="80">"""
+
+# Tiny example GIF from http://www.perlmonks.org/?node_id=7974
+blue_dot = (b'GIF89a1010\x900000\xff000,000010100\x02\x02\x0410;'
+            .replace(b'0', b'\x00').replace(b'1', b'\x01'))
+
+def main(args):
+    message = email.message.EmailMessage(email.policy.SMTP)
+    message['To'] = 'Test Recipient <recipient@example.com>'
+    message['From'] = 'Test Sender <sender@example.com>'
+    message['Subject'] = 'Foundations of Python Network Programming'
+    message['Date'] = email.utils.formatdate(localtime=True)
+    message['Message-ID'] = email.utils.make_msgid()
+
+    if not args.i:
+        message.set_content(html, subtype='html')
+        message.add_alternative(plain)
+    else:
+        cid = email.utils.make_msgid()  # RFC 2392: must be globally unique!
+        message.set_content(html + img.format(cid.strip('<>')), subtype='html')
+        message.add_related(blue_dot, 'image', 'gif', cid=cid,
+                            filename='blue-dot.gif')
+        message.add_alternative(plain)
+
+    for filename in args.filename:
+        mime_type, encoding = mimetypes.guess_type(filename)
+        if encoding or (mime_type is None):
+            mime_type = 'application/octet-stream'
+        main, sub = mime_type.split('/')
+        if main == 'text':
+            with open(filename, encoding='utf-8') as f:
+                text = f.read()
+            message.add_attachment(text, sub, filename=filename)
+        else:
+            with open(filename, 'rb') as f:
+                data = f.read()
+            message.add_attachment(data, main, sub, filename=filename)
+
+    sys.stdout.buffer.write(message.as_bytes())
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Build, print a MIME email')
+    parser.add_argument('-i', action='store_true', help='Include GIF image')
+    parser.add_argument('filename', nargs='*', help='Attachment filename')
+    main(parser.parse_args())
+```
+
+```bash
+python3 build_mine_email.py
+python3 build_mine_email.py attachment.txt arrachment.gz
+python3 build_mine_email.py -i
+python3 build_mine_email.py -i attachment.txt attachment.gz
+```
+
+```reStructuredText
+multipart/alternative是所有multipart/*内容类型的一种，这种类型的邮件消息都是用边界字符串对MIME边界字符串对MIME邮件进行分割，其作用是传输多条消息的多个版本，每个版本都显示完整的消息。
+multipart段的规则：
+1.如果至少调用了一次add_related()那么就会生成一个multipart/related段，其中包含set_content()指定的邮件体与所有相关内容
+2.如果至少调用了一次add_alternative()，那么就会生成一个multipart/alternative段，其中包含原始邮件体以及添加的其他版本的邮件体
+3.如果至少调用了一次add_attachment()，就会在外层生成一个multipart/mixed段，其中包含添加的所有附件
+```
+
+##### 12.4 添加内容
+
+```reStructuredText
+...
+
+(...,cte='quoted-printable')方法：所有内容添加方法都会选择ASCII或Base64中的一种默认的内容传输编码方式。七位信息安全地表示电子邮件中的文本，将会选择ASCII文本，否则就会使用Base64编码。
+
+...
+```
+
+#### 2020-11-16 Monday chapter 12.5：解析电子邮件消息
+
+通过email模块解析电子邮件消息后，进行读取邮件消息。
+
+`A.使用EmailMessage读取邮件体和附件：`
+
+```python
+
+```
+
+`B.遍历MIME部件：`
+
+```reStructuredText
+*遍历MIME电子邮件的四个准则*
+1.
+2.
+3.
+4.
+```
+
+```python
+
+```
+
+`C.使用国际化支持的电子邮件，进行邮件头编码：`
+
+```python
+
+```
+
+`D.解析日期函数：formatdate()生成符合标准的日期：`
+
+```bash
+
+```
+
+#### chapter 13 : SMTP（邮件传输协议 Simple Mail Transport Protocol）
+
+`A.SMTP作用：`
+
+```reStructuredText
+1.将用户输入的点字邮件提交至服务器 ，再由该服务器负责将电子邮件发送至接收服务器。
+2.点字邮件服务器使用SMTP来传输消息。每条消息都会经过互联网的多态邮件服务器，直接到达负责接受的点字邮件地址域（domain，@字符后的地址）
+...
+默认端口53
+python库：smtplib
+```
+
+`B.SMTP与WEB邮件服务的演变：`
+
+```reStructuredText
+早期的邮件服务器必须通过互联网连接到一个已经保存了连接到的邮件的服务器，然后进行电子邮件的下载工作。其整个连接到传输下载的过程相当具有风险性：可能会遭遇连接失败、发送或接受下载机器的关机、断网场景，或者是服务器的塌机，因此需要某种方法将编写完成的点字邮件提交至提供不间断服务的邮件服务器，在该服务器的发送队列中，等待发送。
+电子邮件提交：邮件提交过程中通常遇到防止垃圾邮件的问题，大多数的ISP会进制向电脑的25端口发起TCP连接，点字邮件通常会提交587端口。为了防止垃圾邮件发送者连接到用户的ISP并伪装成用户发送信息，点字邮件客户端会使用认证的SMTP。
+ISP：Internet服务器供应商，ISP是Internet的接入入口。作用1.为用户提供Internet接入服务2.为用户提供邮件、信息发布代理服务
+Web邮件到来：浏览器与某个web API进行交互，另一端大型机构通过原始的SMTP连接接收或发送电子邮件。
+SMTP的基础知识：
+1.SMTP是基于TCP/IP的协议
+2.可以对连接进行认证，也可以不认证
+3.可以对连接进行加密，也可以不加密
+SMTP协议并不通过Cc、Bcc的地址头来决定电子邮件的目标地址。
+
+```
+
+`C.SMTP库`
+
+```reStructuredText
+模块名：smtplib
+参数：SMTP的服务器名称，发送者的地址，一个或多个接受者的地址
+```
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'simple_13_1'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'使用smtplib.sendmail()发送电子邮件'
+
+import sys,smtplib
+
+message_template = 'To:{} ' \
+          'From:{} ' \
+          'subject:Test Message from simple.py' \
+          'Hello' \
+          'this is a test message sent to you from the simple.py program in foundations of python network programing.'
+
+def main():
+    if len(sys.argv) < 4:
+        name = sys.argv[0]
+        print('usage:{} server fromaddr toaddr [toaddr]'.format(name))
+        sys.exit(2)
+
+    # SMTP的服务器名称，发送者的地址，一个或多个接受者的地址
+    server,fromaddr,toaddrs = sys.argv[1],sys.argv[2],sys.argv[3]
+    message = message_template.format(','.join(toaddrs),fromaddr)
+    connection = smtplib.SMTP(server)
+    connection.sendmail(fromaddr,toaddrs,message)
+    connection.quit()
+
+    s = '' if len(toaddrs) == 1 else 's'
+    print('Message sent to {} recipient {}'.format(len(toaddrs),s))
+
+if __name__ == '__main__':
+    main()
+```
+
+`D.错误处理、绘画调试`
+
+```rest
+查询地址信息时发生错误：socket.gaierror
+一般的网络和通信问题：socket.error
+其他地址异常错误：socket.herror
+SMTP会话问题：smtplib.SMTPException或它的一个子类
+
+SMTP的调试代码：connection.set_debuglevel(1)
+```
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'debug_13_2'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'debug 调试'
+
+import sys,smtplib,socket
+
+message_template = 'To:{} ' \
+          'From:{} ' \
+          'subject:Test Message from simple.py' \
+          'Hello' \
+          'this is a test message sent to you from the simple.py program in foundations of python network programing.'
+
+def main():
+    if len(sys.argv) < 4:
+        name = sys.argv[0]
+        print('usage:{} server fromaddr toaddr [toaddr]'.format(name))
+        sys.exit(2)
+
+    # SMTP的服务器名称，发送者的地址，一个或多个接受者的地址
+    server,fromaddr,toaddrs = sys.argv[1],sys.argv[2],sys.argv[3]
+    message = message_template.format(','.join(toaddrs),fromaddr)
+
+    try:
+        connection = smtplib.SMTP(server)
+        connection.set_debuglevel(1)
+        connection.sendmail(fromaddr,toaddrs,message)
+    except (socket.gaierror,socket.error,socket.herror,smtplib.SMTPException) as e:
+        print('your message may not have been sent')
+        print(e)
+        sys.exit(1)
+    else:
+        s = '' if len(toaddrs) == 1 else 's'
+        print('Message sent to {} recipient {}'.format(len(toaddrs),s))
+        connection.quit()
+
+if __name__ == '__main__':
+    main()
+    
+```
+
+```reStructuredText
+在会话的过程中，客户端smtplib库会发送一个EHLO命令与SMTP进行会话
+```
+
+
+
+`E.从EHLO获取信息`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'ehlo_13_4'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'消息大小限制'
+
+import sys,smtplib,socket
+
+message_template = 'To:{} ' \
+          'From:{} ' \
+          'subject:Test Message from simple.py' \
+          'Hello' \
+          'this is a test message sent to you from the simple.py program in foundations of python network programing.'
+
+def main():
+    if len(sys.argv) < 4:
+        name = sys.argv[0]
+        print('usage:{} server fromaddr toaddr [toaddr]'.format(name))
+        sys.exit(2)
+
+    # SMTP的服务器名称，发送者的地址，一个或多个接受者的地址
+    server,fromaddr,toaddrs = sys.argv[1],sys.argv[2],sys.argv[3]
+    message = message_template.format(','.join(toaddrs),fromaddr)
+
+    try:
+        connection = smtplib.SMTP(server)
+        connection.set_debuglevel(1)
+        report_on_message_size(connection,fromaddr,toaddrs,message)
+    except (socket.gaierror,socket.error,socket.herror,smtplib.SMTPException) as e:
+        print('your message may not have been sent')
+        print(e)
+        sys.exit(1)
+    else:
+        s = '' if len(toaddrs) == 1 else 's'
+        print('Message sent to {} recipient {}'.format(len(toaddrs),s))
+        connection.quit()
+
+def report_on_message_size(connection,fromaddr,toaddrs,message):
+    # 获取邮件信息
+    code = connection.ehlo()[0]
+    uses_esmtp = (200 <= code <= 299)
+    if not uses_esmtp:
+        code = connection.helo()[0]
+        if not (200 <= code <=299):
+            print('remote server fefused helo;code:',code)
+            sys.exit(1)
+    # 检查是否存在starttls
+    if uses_esmtp and connection.has_extn('size'):
+        print('Maximum message size is',connection.esmtp_features['size'])
+        if len(message) > int(connection.esmtp_features['size']):
+            print('message too large;aborting')
+            sys.exit(1)
+
+    connection.sendmail(fromaddr,toaddrs,message)
+
+if __name__ == '__main__':
+    main()
+```
+
+`F.使用安全套接层和传输层安全协议SSL、TLS`
+
+```reStructuredText
+SMTP中使用TLS的步骤：
+1.创建SMTP对象
+2.发送EHLO命令，如果远程服务器不支持EHLO，同样不支持TLS
+3.检查s.has_extn()，查看是否存在starttls。如果不存在，表示远程服务器不支持TLS，只能使用明文发送消息
+4.构造SSL上下文对象，验证服务器身份
+5.调用starttls()，初始化加密通道
+6.再次调用ehlo()，此时已经加密
+7.发送消息
+```
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'tls_13_5'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'使用TLS进行进行安全连接'
+
+import sys,smtplib,socket,ssl
+
+message_template = 'To:{} ' \
+          'From:{} ' \
+          'subject:Test Message from simple.py' \
+          'Hello' \
+          'this is a test message sent to you from the simple.py program in foundations of python network programing.'
+
+def main():
+    if len(sys.argv) < 4:
+        name = sys.argv[0]
+        print('usage:{} server fromaddr toaddr [toaddr]'.format(name))
+        sys.exit(2)
+
+    # SMTP的服务器名称，发送者的地址，一个或多个接受者的地址
+    server,fromaddr,toaddrs = sys.argv[1],sys.argv[2],sys.argv[3]
+    message = message_template.format(','.join(toaddrs),fromaddr)
+
+    try:
+        connection = smtplib.SMTP(server)
+        connection.set_debuglevel(1)
+        send_message_securely(connection,fromaddr,toaddrs,message)
+    except (socket.gaierror,socket.error,socket.herror,smtplib.SMTPException) as e:
+        print('your message may not have been sent')
+        print(e)
+        sys.exit(1)
+    else:
+        s = '' if len(toaddrs) == 1 else 's'
+        print('Message sent to {} recipient {}'.format(len(toaddrs),s))
+        connection.quit()
+
+def send_message_securely(connection,fromaddr,toaddrs,message):
+    # 发送ehlo命令
+    code = connection.ehlo()[0]
+    uses_esmtp = (200 <= code <= 299)
+    if not uses_esmtp:
+        code = connection.ehlo()[0]
+        if not (200 <= code <=299):
+            print('remote server fefused helo;code:', code)
+            sys.exit(1)
+
+    if uses_esmtp and connection.has_extn('starttls'):
+        print('negotiating tls...')
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.set_default_verify_paths()
+        context.verify_mode = ssl.CERT_REQUIRED
+        connection.starttls(context=context)
+        code = connection.ehlo()[0]
+        if not (200 <= code <= 299):
+            print("couldn't ehlo after starttls")
+            sys.exit(5)
+        print('using tls connection')
+    else:
+        print('server does not support tls; using normal connection')
+        
+    connection.sendmail(fromaddr,toaddrs,message)
+
+if __name__ == '__main__':
+    main()
+```
+
+`G.认证的SMTP`
+
+```python
+#! /usr/bin/python3
+# ! _*_ coding:utf-8 _*_
+# program_name:'login_13_6'
+# version:'Ubuntu linux'
+# packages_url:''
+# author:'jingzuo'
+# program_url:''
+# program_description:'认证smtp'
+
+import sys,smtplib,socket
+from getpass import getpass
+
+message_template = 'To:{} ' \
+          'From:{} ' \
+          'subject:Test Message from simple.py' \
+          'Hello' \
+          'this is a test message sent to you from the simple.py program in foundations of python network programing.'
+
+def main():
+    if len(sys.argv) < 4:
+        name = sys.argv[0]
+        print('usage:{} server fromaddr toaddr [toaddr]'.format(name))
+        sys.exit(2)
+
+    # SMTP的服务器名称，发送者的地址，一个或多个接受者的地址
+    server,fromaddr,toaddrs = sys.argv[1],sys.argv[2],sys.argv[3]
+    message = message_template.format(','.join(toaddrs),fromaddr)
+    username = input('enter name:')
+    password = getpass('enter password:')
+
+    try:
+        connection = smtplib.SMTP(server)
+        try:
+            connection.login(username,password)
+        except smtplib.SMTPException as e:
+            print('authentication failed:',e)
+            sys.exit(1)
+        connection.set_debuglevel(1)
+        connection.sendmail(fromaddr,toaddrs,message)
+    except (socket.gaierror,socket.error,socket.herror,smtplib.SMTPException) as e:
+        print('your message may not have been sent')
+        print(e)
+        sys.exit(1)
+    else:
+        s = '' if len(toaddrs) == 1 else 's'
+        print('Message sent to {} recipient {}'.format(len(toaddrs),s))
+        connection.quit()
+
+if __name__ == '__main__':
+    main()
+```
+
