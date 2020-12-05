@@ -2035,3 +2035,61 @@ if __name__ == '__main__':
     main()
 ```
 
+#### 2020-11-18 Wednesday chapter16：Telnet and ssh
+
+`A.Words`
+
+```reStructuredText
+1.probe v.探测，探索 n.探针，探测器
+eg:He hold the a device to probe for the location of the gold.
+2.hunter n.猎人，搜寻者
+eg:The man with a hound is an expricenced hunter.
+3.governor n.州长，主管，负责人
+eg:This famous actor used to be the governor of califonia.
+4.bow v.鞠躬，弯腰 n.弓
+eg:The singer bowed to us after the show.
+5.scrape n.檫伤 v.刮，檫
+eg:She is treating the scrape on the child's knee.
+```
+
+#### 2020-11-20 Friday 
+
+`A.words`
+
+```reStructuredText
+1.inviting adj.诱人的；引人入胜的
+eg:This bone looks rather inviting to the dog.
+2.herd n.兽群，牧群 v.放牧，群集
+eg:look! There is a herd of sheep.
+```
+
+`B.16.1:命令行自动化工具`
+
+```reStructuredText
+1.Fabric 支持python2
+2.Ansible 
+3.SaltStack 
+4.pexpect
+```
+
+`C.命令扩展与引用`
+
+```bash
+# 展示所有匹配文件
+echo *
+# 转义符号
+echo \*
+# 统计
+echo wc -w < xxx.txt 
+echo wc -l < xxx.txt
+```
+
+subprocess
+
+```python
+# python中调用命令行的方式
+import subprocess
+args = ['echo','xxx','*','xxxx']
+subprocess.call(args)
+```
+

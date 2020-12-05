@@ -15,12 +15,12 @@ git branch -M main
 git remote add origin https://github.com/somebady111/1.git
 git push -u origin main
 
-# git二次上传
+# git 调换当前传输位置
 git remote add origin https://github.com/somebady111/1.git
 git branch -M main
 git push -u origin main
 
-# 二次上传实践
+# 正常上传
 git add *
 git commit -m ''
 git push -u origin master
